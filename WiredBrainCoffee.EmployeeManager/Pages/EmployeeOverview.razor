@@ -1,7 +1,22 @@
 ﻿@page "/employees/list"
+@using Microsoft.EntityFrameworkCore
+@using WiredBrainCoffee.EmployeeManager.Data
+@using WiredBrainCoffee.EmployeeManager.Data.Models
+@inject EmployeeManagerDbContext context
 
 <PageTitle>Employees</PageTitle>
 
 <h1>Employees</h1>
 
 TODO: List the employees here.
+
+@code
+{
+    private Employee[]? Employees { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        Employees = await context.Employees
+            .Include(emp => emp.Department).ToArrayAsync();
+    }
+}

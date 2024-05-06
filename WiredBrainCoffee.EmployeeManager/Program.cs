@@ -7,7 +7,6 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 // DbContext :
-string connectionString = "Server=localhost;Database=EmployeeMangerDb;User Id=SA;Password=B5uf1g8p29;Encrypt=True;TrustServerCertificate=True;";
 builder.Services.AddDbContext<EmployeeManagerDbContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("EmployeeManagerDb")));
 
 var app = builder.Build();
