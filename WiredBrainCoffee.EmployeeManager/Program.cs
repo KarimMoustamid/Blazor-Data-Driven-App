@@ -13,6 +13,7 @@ builder.Services.AddDbContext<EmployeeManagerDbContext>(opt => opt.UseSqlServer(
 var app = builder.Build();
 
 // REMEMBER : this is how to automatically check for the latest migration when the app start
+// NOTE : Dont do this in production
 await EnsureDatabaseIsMigrated(app.Services);
 
 async Task EnsureDatabaseIsMigrated(IServiceProvider services)
