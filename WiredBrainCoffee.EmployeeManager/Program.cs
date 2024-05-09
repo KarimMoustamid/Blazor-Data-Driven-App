@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-// DbContext :
+// NOTE : DbContext using ContextFactory
 builder.Services.AddDbContextFactory<EmployeeManagerDbContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("EmployeeManagerDb")));
 
 var app = builder.Build();
