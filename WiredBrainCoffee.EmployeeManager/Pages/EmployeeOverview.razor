@@ -1,22 +1,121 @@
-﻿@page "/employees/list"
+﻿@page "/employees/list/{currentPage:int?}"
 @using Microsoft.EntityFrameworkCore
-@using WiredBrainCoffee.EmployeeManager.Data
-@using WiredBrainCoffee.EmployeeManager.Data.Models
-@inject EmployeeManagerDbContext context
+@inject IDbContextFactory<EmployeeManagerDbContext> contextFactory
+@inject NavigationManager navigationManager
 
 <PageTitle>Employees</PageTitle>
 
 <h1>Employees</h1>
 
-TODO: List the employees here.
+
+@if (Employees is null)
+{
+    <div>Loading...</div>
+}
+else
+{
+    <ul class="pagination mt-3">
+        <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+            <a class="page-link" href="/employees/list/@(CurrentPage - 1)">Previous</a>
+        </li>
+        @for (int i = 1; i <= TotalPages; i++)
+        {
+            <li class="page-item @(CurrentPage == i ? "active" : "")">
+                <a class="page-link" href="/employees/list/@i">@i</a>
+            </li>
+        }
+        <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+            <a class="page-link" href="/employees/list/@(CurrentPage + 1)">Next</a>
+        </li>
+    </ul>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Firstname</th>
+            <th>Lastname</th>
+            <th>Is Developer</th>
+            <th>Department</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var employee in Employees)
+        {
+            <tr>
+                <td>@employee.FirstName</td>
+                <td>@employee.LastName</td>
+                <td>@employee.IsDeveloper</td>
+                <td>@employee.Department?.Name</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
 
 @code
 {
+    [Parameter] public int? CurrentPage { get; set; }
     private Employee[]? Employees { get; set; }
+    public int TotalPages { get; set; }
 
-    protected async override Task OnInitializedAsync()
+    private const int ItemsPerPage = 4;
+
+    protected async override Task OnParametersSetAsync()
     {
+        if (CurrentPage is null or  < 1)
+        {
+            navigationManager.NavigateTo( "/employees/list/1");
+            return;
+            // CurrentPage = 1;
+        }
+
+        await using var context = contextFactory.CreateDbContext();
+
+        var employeeCount = await context.Employees.CountAsync();
+        TotalPages = employeeCount == 0 ? 1 : (int)Math.Ceiling((double)employeeCount / ItemsPerPage);
+
+        if (CurrentPage > TotalPages)
+        {
+            navigationManager.NavigateTo($"/employees/list/{TotalPages}");
+            return;
+        }
+
+        var itemsToSkip = (CurrentPage.Value - 1) * ItemsPerPage;
         Employees = await context.Employees
-            .Include(emp => emp.Department).ToArrayAsync();
+            .Include(emp => emp.Department)
+            .OrderBy(emp => emp.FirstName)
+            .Skip(itemsToSkip)
+            .Take(ItemsPerPage)
+            .ToArrayAsync();
     }
 }
+
+
+@* REMEMBER : SetParametersAsync(ParameterView parameters):
+- This method is called when a component is initialized with its parameter set.
+- You can override this method when you need to execute additional logic after your component's parameters have been set.
+- It occurs before the OnInitialized event/methods occur and is often used for dependency injection. *@
+
+@* REMEMBER : OnInitialized() and OnInitializedAsync():
+- These methods are called after the parameters are set and the component is initialized.
+- This is a good place to perform one-time initialization that doesn't depend on the data input via parameters. *@
+
+@* REMEMBER : OnParametersSet() and OnParametersSetAsync():
+- These methods are called each time new or updated parameters are received from the parent in the render tree after OnInitialized* methods.
+- It is a suitable place to perform calculations or actions based on the parameter values. *@
+
+@* REMEMBER : ShouldRender():
+- This method is optionally overloadable to bypass the rendering of the component.
+- The runtime calls ShouldRender to determine whether the UI should be updated.
+- The default implementation always returns true. *@
+
+@* REMEMBER : OnAfterRender() and OnAfterRenderAsync():
+- These methods are triggered after each render, including the first render.
+- You can use them to perform actions such as JS interop calls, focusing form controls, drawing on an HTML canvas, and so on. *@
+
+@* REMEMBER : IDisposable interface (Dispose()):
+- This method allows for the cleanup of resources when a component is removed from the UI.
+- To invoke this you'll need to implement IDisposable. *@
+
+@* Always remember to call base.methodname(), for example, base.OnInitialized(), at the beginning of the method that you are trying to override if you are extending an existing component, else unexpected behavior might occur. *@
