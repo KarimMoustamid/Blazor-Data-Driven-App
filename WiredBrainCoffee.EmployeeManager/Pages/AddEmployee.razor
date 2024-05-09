@@ -10,6 +10,7 @@
 @if (Employee is not null)
 {
     <EditForm Model="@Employee"
+              OnValidSubmit="@HandleValidSubmit"
               OnInvalidSubmit="@HandleInvalidSubmit">
         <DataAnnotationsValidator />
         @* <ValidationSummary /> *@
@@ -48,22 +49,12 @@
                            @bind-Value="Employee.IsDeveloper" />
         </div>
 
+        @* important : disable if busy*@
         <button type="submit" class="btn btn-primary" disabled="@IsBusy">Add</button>
     </EditForm>
 
-    @if (SuccessMessage is not null)
-    {
-        <br />
-        <div class="alert alert-success">@SuccessMessage</div>
-    }
-
-    @if (ErrorMessage is not null)
-    {
-        <br />
-        <div class="alert alert-danger">@ErrorMessage</div>
-    }
-
 }
+
 @if (SuccessMessage is not null)
 {
     <br />
@@ -85,6 +76,7 @@
 
     private string? ErrorMessage { get; set; }
 
+    // Important :
     private bool IsBusy { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -101,44 +93,45 @@
         };
     }
 
-    // private async Task HandleValidSubmit()
-    // {
-    //     if (IsBusy)
-    //     {
-    //         return;
-    //     }
-    //
-    //     IsBusy = true;
-    //
-    //     try
-    //     {
-    //         if (Employee is not null)
-    //         {
-    //             using var context = ContextFactory.CreateDbContext();
-    //
-    //             context.Employees.Add(Employee);
-    //             await context.SaveChangesAsync();
-    //
-    //             SuccessMessage = $"Employee {Employee.FirstName} {Employee.LastName} was added successfully.";
-    //             ErrorMessage = null;
-    //
-    //             // New Employee for next creation
-    //             Employee = new()
-    //             {
-    //                 DepartmentId = Employee.DepartmentId
-    //             };
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         SuccessMessage = null;
-    //         ErrorMessage = $"Error while adding employee: {ex.Message}";
-    //     }
-    //     finally
-    //     {
-    //         IsBusy = false;
-    //     }
-    // }
+    private async Task HandleValidSubmit()
+    {
+        // important :
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            if (Employee is not null)
+            {
+                using var context = ContextFactory.CreateDbContext();
+
+                context.Employees.Add(Employee);
+                await context.SaveChangesAsync();
+
+                SuccessMessage = $"Employee {Employee.FirstName} {Employee.LastName} was added successfully.";
+                ErrorMessage = null;
+
+                // IMPORTANT : The form need to be ready for new creation
+                Employee = new()
+                {
+                    DepartmentId = Employee.DepartmentId
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            SuccessMessage = null;
+            ErrorMessage = $"Error while adding employee: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     private void HandleInvalidSubmit()
     {
